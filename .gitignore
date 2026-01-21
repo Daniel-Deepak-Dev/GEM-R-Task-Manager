@@ -1,0 +1,16 @@
+# System Files
+.DS_Store
+Thumbs.db
+*.log
+
+# Editor Directories
+.vscode/
+.idea/
+
+# Backend/Frontend specific are handled in their own nested .gitignore files,
+# but adding these globally is safe practice.
+node_modules/
+dist/
+build/
+*.exe
+*.o
