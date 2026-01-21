@@ -28,12 +28,21 @@ func main() {
 	coll := client.Database("taskmanager").Collection("tasks")
 	taskHandler := handlers.NewTaskHandler(coll)
 
+	// Skill Handler
+	skillCol := client.Database("taskmanager").Collection("skills")
+	metadataCol := client.Database("taskmanager").Collection("metadata")
+	skillHandler := handlers.NewSkillHandler(skillCol, metadataCol)
+
+	// Progress Handler
+	progressCol := client.Database("taskmanager").Collection("progress")
+	progressHandler := handlers.NewProgressHandler(progressCol)
+
 	// 4. Setup Fiber App
 	app := fiber.New()
 	app.Use(cors.New())
 
 	// 5. Setup Routes
-	routes.SetupRoutes(app, taskHandler)
+	routes.SetupRoutes(app, taskHandler, skillHandler, progressHandler)
 
 	// 6. Start Server
 	log.Println("Server running on port", cfg.Port)
