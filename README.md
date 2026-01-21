@@ -1,5 +1,11 @@
 # GEM-R Stack Portfolio Project
 
+![MIT License](https://img.shields.io/badge/License-MIT-green.svg)
+![Go](https://img.shields.io/badge/Backend-Go_1.21+-00ADD8.svg?logo=go&logoColor=white)
+![Expo](https://img.shields.io/badge/Mobile-Expo_50+-000020.svg?logo=expo&logoColor=white)
+![MongoDB](https://img.shields.io/badge/Database-MongoDB-47A248.svg?logo=mongodb&logoColor=white)
+![React Native](https://img.shields.io/badge/UI-React_Native-61DAFB.svg?logo=react&logoColor=black)
+
 Welcome! This repository serves as a practical demonstration of my full-stack development skills, specifically showcasing the **GEM-R Stack**. It was built to understand and implement fundamental CRUD (Create, Read, Update, Delete) operations in a modern, distributed application architecture.
 
 ## 🚀 The GEM-R Stack
@@ -40,8 +46,15 @@ The backend service connects to MongoDB and exposes API endpoints.
 
 ```bash
 cd backend
-go mod tidy       # Install dependencies
-go run main.go    # Start the server
+# 1. Create .env file for configuration
+cp .env.example .env
+# (Windows Command Prompt: copy .env.example .env)
+
+# 2. Install dependencies
+go mod tidy
+
+# 3. Start the server
+go run main.go
 ```
 
 ### 3. Frontend Setup (Expo)
@@ -49,8 +62,15 @@ The frontend application connects to the Go backend.
 
 ```bash
 cd frontend
-npm install       # Install Node dependencies
-npx expo start    # Launch the Expo development server
+# 1. Configure API URL
+cp .env.example .env
+# (Windows Command Prompt: copy .env.example .env)
+
+# 2. Install Node dependencies
+npm install
+
+# 3. Start the Expo development server
+npx expo start
 ```
 
 **To Run on Your Device:**

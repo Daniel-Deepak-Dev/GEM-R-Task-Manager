@@ -16,7 +16,7 @@ import axios from 'axios';
 // For Android Emulator: use 10.0.2.2
 // For iOS Simulator: use localhost
 // For physical device: use your computer's local IP (e.g., 192.168.1.100)
-const API_URL = 'http://192.168.0.4:8080/api/tasks';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api/tasks';
 
 // TypeScript interface for Task
 interface Task {

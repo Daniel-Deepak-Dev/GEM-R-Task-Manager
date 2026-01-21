@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,8 +27,23 @@ type Task struct {
 var taskCollection *mongo.Collection
 
 func main() {
+	// 0. Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
+
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	// 1. Connect to MongoDB
-	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://localhost:27017"))
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		log.Fatal("Failed to connect to MongoDB:", err)
 	}
@@ -53,8 +70,8 @@ func main() {
 	app.Delete("/api/tasks/:id", deleteTask) // Delete a task
 
 	// 5. Start the server
-	log.Println("Server running on http://localhost:8080")
-	log.Fatal(app.Listen(":8080"))
+	log.Println("Server running on port " + port)
+	log.Fatal(app.Listen(":" + port))
 }
 
 // GET /api/tasks - Fetch all tasks from MongoDB
