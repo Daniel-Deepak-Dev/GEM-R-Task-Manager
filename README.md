@@ -77,6 +77,12 @@ npx expo start
 *   Download the **Expo Go** app on iOS or Android.
 *   Scan the QR code displayed in the terminal.
 
+## 🚀 Going to Production
+Ready to deploy? Check out our detailed [Deployment Guide](DEPLOYMENT.md) for instructions on:
+*   ☁️ **Database**: Setting up MongoDB Atlas.
+*   🐳 **Backend**: Dockerizing the Go API.
+*   📱 **Frontend**: Building for App Stores (EAS) and Web (Vercel).
+
 ## 🔮 Future Improvements
 
 *   authentication (JWT)
