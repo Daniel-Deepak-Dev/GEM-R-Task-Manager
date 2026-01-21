@@ -1,0 +1,215 @@
+package main
+
+import (
+	"context" // Standard library package for handling timeouts and cancellations
+	"log"     // Standard library package for printing messages to the console
+	"os"      // Standard library package for interacting with the operating system (like environment variables)
+	"time"    // Standard library package for working with dates and times
+
+	"github.com/gofiber/fiber/v2"                 // Fast, Express-inspired web framework for Go
+	"github.com/gofiber/fiber/v2/middleware/cors" // Middleware to handle Cross-Origin Resource Sharing
+	"github.com/joho/godotenv"                    // Tool to load configurations from a .env file
+	"go.mongodb.org/mongo-driver/bson"            // MongoDB's binary JSON format for database documents
+	"go.mongodb.org/mongo-driver/bson/primitive"  // Primitive types for MongoDB, especially ObjectIDs
+	"go.mongodb.org/mongo-driver/mongo"           // Official MongoDB driver for Go
+	"go.mongodb.org/mongo-driver/mongo/options"   // Configuration options for the MongoDB driver
+)
+
+// Task represents a single item in our to-do list.
+// We use 'struct' to group related data together.
+type Task struct {
+	// ID is the unique identifier for the task in MongoDB.
+	// 'json:"id"' tells Go how to name this field when sending it as JSON to the frontend.
+	// 'bson:"_id"' tells the database driver how to store this field in MongoDB.
+	ID          primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	Title       string             `json:"title" bson:"title"`
+	Description string             `json:"description" bson:"description"`
+	Completed   bool               `json:"completed" bson:"completed"`
+	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
+}
+
+// taskCollection is a global pointer to our MongoDB collection.
+// This allows all our functions to access the database.
+var taskCollection *mongo.Collection
+
+func main() {
+	// 0. LOAD CONFIGURATION
+	// This looks for a '.env' file to get database passwords or port numbers.
+	if err := godotenv.Load(); err != nil {
+		log.Println("Note: No .env file found, using defaults.")
+	}
+
+	// Get MongoDB address from environment or use a default local one.
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	// Get server port from environment or default to 8080.
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	// 1. DATABASE CONNECTION
+	// context.Background() is a 'root' context that never expires.
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(mongoURI))
+	if err != nil {
+		log.Fatal("Could not connect to MongoDB. Is it running? Error:", err)
+	}
+
+	// 'defer' ensures the database disconnects when the 'main' function ends.
+	defer client.Disconnect(context.Background())
+
+	// Select the database named "taskmanager" and the collection named "tasks".
+	taskCollection = client.Database("taskmanager").Collection("tasks")
+	log.Println("Successfully connected to MongoDB!")
+
+	// 2. WEB SERVER SETUP
+	// fiber.New() creates a new instance of our web server application.
+	app := fiber.New()
+
+	// 3. SECURITY (CORS)
+	// This middleware tells the browser that it's okay for our frontend (running on a different port)
+	// to talk to this backend server.
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*", // "*" means anyone can access. Be more specific in real production!
+		AllowHeaders: "Origin, Content-Type, Accept",
+		AllowMethods: "GET, POST, PUT, DELETE",
+	}))
+
+	// 4. API ENDPOINTS (ROUTES)
+	// These lines map a URL (like /api/tasks) and an HTTP method (GET, POST) to a function.
+	app.Get("/api/tasks", getTasks)          // Listing all tasks
+	app.Post("/api/tasks", createTask)       // Adding a new task
+	app.Put("/api/tasks/:id", updateTask)    // Editing a task via its ID
+	app.Delete("/api/tasks/:id", deleteTask) // Removing a task via its ID
+
+	// 5. START SERVER
+	// This starts the engine and waits for incoming requests.
+	log.Println("Task Manager API is now live on port " + port)
+	log.Fatal(app.Listen(":" + port))
+}
+
+// getTasks handles 'GET /api/tasks' requests.
+// It retrieves all tasks from the database and returns them to the user.
+func getTasks(c *fiber.Ctx) error {
+	var tasks []Task
+
+	// Find({}) tells MongoDB: "find everything in this collection".
+	cursor, err := taskCollection.Find(context.Background(), bson.M{})
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Could not fetch tasks from database"})
+	}
+	// Always close the cursor to free up database resources.
+	defer cursor.Close(context.Background())
+
+	// Read all found documents from the cursor into our 'tasks' slice.
+	if err := cursor.All(context.Background(), &tasks); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Could not read task data"})
+	}
+
+	// If no tasks were found, return an empty list [] instead of 'null'.
+	if tasks == nil {
+		tasks = []Task{}
+	}
+
+	// Send the list back as JSON with a 200 OK status.
+	return c.JSON(tasks)
+}
+
+// createTask handles 'POST /api/tasks' requests.
+// It takes JSON data sent by the frontend and saves it as a new task.
+func createTask(c *fiber.Ctx) error {
+	task := new(Task)
+
+	// 'BodyParser' automatically fills our 'task' struct with the JSON data from the request.
+	if err := c.BodyParser(task); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "The data you sent is not a valid task format"})
+	}
+
+	// Generate a unique ID and a timestamp for the new task.
+	task.ID = primitive.NewObjectID()
+	task.CreatedAt = time.Now()
+
+	// Default to false if not provided (though Go defaults bool to false automatically).
+	if task.Completed == false {
+		task.Completed = false
+	}
+
+	// Save the task object into the MongoDB collection.
+	_, err := taskCollection.InsertOne(context.Background(), task)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Could not save the task to the database"})
+	}
+
+	// 201 Created status means "Everything worked and a new item was made!"
+	return c.Status(201).JSON(task)
+}
+
+// updateTask handles 'PUT /api/tasks/:id' requests.
+// It finds a specific task by its ID and changes its details.
+func updateTask(c *fiber.Ctx) error {
+	// 1. Get the ID from the URL (e.g., /api/tasks/12345)
+	id := c.Params("id")
+
+	// Convert the string ID into a 'primitive.ObjectID' that MongoDB understands.
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "That task ID doesn't look like a valid MongoDB ID"})
+	}
+
+	// 2. Get the new task data from the request body.
+	task := new(Task)
+	if err := c.BodyParser(task); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid data format for update"})
+	}
+
+	// 3. Prepare the update instruction.
+	// "$set" tells MongoDB to only change these specific fields.
+	update := bson.M{
+		"$set": bson.M{
+			"title":       task.Title,
+			"description": task.Description,
+			"completed":   task.Completed,
+		},
+	}
+
+	// 4. Tell MongoDB to find the task with '_id' and apply the 'update'.
+	result, err := taskCollection.UpdateOne(context.Background(), bson.M{"_id": objectID}, update)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Could not update the task in the database"})
+	}
+
+	// If MatchedCount is 0, it means no task with that ID exists.
+	if result.MatchedCount == 0 {
+		return c.Status(404).JSON(fiber.Map{"error": "Task not found recorded in our system"})
+	}
+
+	// Return the updated task data to the frontend.
+	task.ID = objectID
+	return c.JSON(task)
+}
+
+// deleteTask handles 'DELETE /api/tasks/:id' requests.
+// It removes a task from the database permanently.
+func deleteTask(c *fiber.Ctx) error {
+	id := c.Params("id")
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid task ID provided"})
+	}
+
+	// DeleteOne does exactly what it says: finds one matching item and deletes it.
+	result, err := taskCollection.DeleteOne(context.Background(), bson.M{"_id": objectID})
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Could not delete task from database"})
+	}
+
+	// Check if any document was actually deleted.
+	if result.DeletedCount == 0 {
+		return c.Status(404).JSON(fiber.Map{"error": "No task found with that ID to delete"})
+	}
+
+	return c.JSON(fiber.Map{"message": "Task successfully removed from the system"})
+}
