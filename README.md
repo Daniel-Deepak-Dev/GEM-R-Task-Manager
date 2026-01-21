@@ -1,4 +1,4 @@
-# GEM-R Stack Portfolio Project
+# Project to Learn GEM-R Stack 
 
 ![MIT License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Go](https://img.shields.io/badge/Backend-Go_1.21+-00ADD8.svg?logo=go&logoColor=white)
@@ -94,4 +94,5 @@ Ready to deploy? Check out our detailed [Deployment Guide](DEPLOYMENT.md) for in
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 Copyright (c) 2026 Deepak Thomas
+
 
