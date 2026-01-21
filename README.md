@@ -1,0 +1,71 @@
+# GEM-R Stack Portfolio Project
+
+Welcome! This repository serves as a practical demonstration of my full-stack development skills, specifically showcasing the **GEM-R Stack**. It was built to understand and implement fundamental CRUD (Create, Read, Update, Delete) operations in a modern, distributed application architecture.
+
+## 🚀 The GEM-R Stack
+
+This project leverages a powerful combination of technologies:
+
+*   **G**o (Golang): High-performance backend API handling business logic and request processing.
+*   **E**xpo: React Native framework for building a universal, native-feeling mobile application.
+*   **M**ongoDB: Flexible NoSQL database for efficient data storage and retrieval.
+*   **R**eact Native: Component-based UI library for crafting the user interface.
+
+## 🎯 Project Goals
+
+*   **Demonstrate Proficiency**: Showcasing the ability to integrate four distinct technologies into a cohesive application.
+*   **Backend Mastery**: Implementing RESTful services with Go.
+*   **Mobile Development**: Building responsive mobile interfaces with Expo and React Native.
+*   **Database Management**: Handling data persistence with MongoDB.
+
+## 🛠️ Installation & Walkthrough
+
+If you'd like to run this project locally to see it in action, follow these steps.
+
+### Prerequisites
+
+*   [Go](https://go.dev/dl/) (v1.21+)
+*   [Node.js](https://nodejs.org/) (LTS)
+*   [MongoDB](https://www.mongodb.com/try/download/community) (Local or Atlas)
+
+### 1. Environment & Database
+Ensure your MongoDB instance is running.
+```powershell
+# Verify MongoDB service (Windows)
+get-service MongoDB
+```
+
+### 2. Backend Setup (Go)
+The backend service connects to MongoDB and exposes API endpoints.
+
+```bash
+cd backend
+go mod tidy       # Install dependencies
+go run main.go    # Start the server
+```
+
+### 3. Frontend Setup (Expo)
+The frontend application connects to the Go backend.
+
+```bash
+cd frontend
+npm install       # Install Node dependencies
+npx expo start    # Launch the Expo development server
+```
+
+**To Run on Your Device:**
+*   Download the **Expo Go** app on iOS or Android.
+*   Scan the QR code displayed in the terminal.
+
+## 🔮 Future Improvements
+
+*   authentication (JWT)
+*   Enhanced error handling and validation
+*   Unit and Integration tests
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2026 Deepak Thomas
+
